@@ -149,14 +149,13 @@ void ClubAudioAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
 
 void ClubAudioAnalyzerEQAudioProcessorEditor::resized()
 {
-    auto area = getLocalBounds().reduced(16);
-    title.setBounds(area.removeFromTop(34));
-    loadTxtButton.setBounds(area.removeFromTop(30).removeFromRight(190).reduced(2, 0));
+    title.setBounds(16, 16, juce::jmax(260, getWidth() - 420), 30);
     resetButton.setBounds(getWidth() - 118, 16, 96, 30);
+    loadTxtButton.setBounds(getWidth() - 322, 16, 194, 30);
 
-    txtFileLabel.setBounds(16, 48, getWidth() - 32, 25);
-    referenceLabel.setBounds(16, 74, getWidth() - 32, 25);
-    status.setBounds(16, 102, getWidth() - 32, 22);
+    txtFileLabel.setBounds(16, 50, getWidth() - 32, 25);
+    referenceLabel.setBounds(16, 76, getWidth() - 32, 25);
+    status.setBounds(16, 103, getWidth() - 32, 22);
     curveTitle.setBounds(18, 128, 300, 20);
 
     const int graphBottom = (int)(154.0f + (float)getHeight() * 0.46f);
