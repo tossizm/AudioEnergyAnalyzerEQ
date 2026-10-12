@@ -1,47 +1,42 @@
 cmake_minimum_required(VERSION 3.22)
-project(ClubAudioAnalyzerEQ VERSION 1.0.0)
+project(ClubAudioAnalyzerEQ VERSION 1.0.0 LANGUAGES CXX)
 
-if(NOT DEFINED JUCE_SOURCE_DIR)
-  include(FetchContent)
-  FetchContent_Declare(juce
-    GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG 8.0.6
-    GIT_SHALLOW TRUE)
-  FetchContent_MakeAvailable(juce)
-else()
-  add_subdirectory("${JUCE_SOURCE_DIR}" JUCE)
-endif()
+include(FetchContent)
+FetchContent_Declare(JUCE
+  GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+  GIT_TAG 8.0.12
+  GIT_SHALLOW TRUE)
+FetchContent_MakeAvailable(JUCE)
 
 juce_add_plugin(ClubAudioAnalyzerEQ
   COMPANY_NAME "ClubAudioAnalyzer"
   BUNDLE_ID "jp.clubaudioanalyzer.eq"
   PLUGIN_MANUFACTURER_CODE ClAu
-  PLUGIN_CODE CaEQ
+  PLUGIN_CODE CaEq
   PRODUCT_NAME "ClubAudioAnalyzer EQ"
-  DESCRIPTION "JSON-linked 10-band RBJ Bell EQ"
-  FORMATS VST3
+  DESCRIPTION "10-band reference-driven EQ for ClubAudioAnalyzer"
   IS_SYNTH FALSE
   NEEDS_MIDI_INPUT FALSE
   NEEDS_MIDI_OUTPUT FALSE
   IS_MIDI_EFFECT FALSE
-  EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+  EDITOR_WANTS_KEYBOARD_FOCUS TRUE
   COPY_PLUGIN_AFTER_BUILD FALSE
+  FORMATS VST3
   VST3_CATEGORIES Fx EQ)
 
+juce_generate_juce_header(ClubAudioAnalyzerEQ)
 target_sources(ClubAudioAnalyzerEQ PRIVATE
   Source/PluginProcessor.cpp
   Source/PluginProcessor.h
   Source/PluginEditor.cpp
   Source/PluginEditor.h)
-
 target_compile_features(ClubAudioAnalyzerEQ PRIVATE cxx_std_17)
 target_compile_definitions(ClubAudioAnalyzerEQ PUBLIC
-  JUCE_WEB_BROWSER=0
-  JUCE_USE_CURL=0
-  JUCE_VST3_CAN_REPLACE_VST2=0)
+  JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
 target_link_libraries(ClubAudioAnalyzerEQ PRIVATE
   juce::juce_audio_utils
   juce::juce_dsp
+  juce::juce_gui_extra
   PUBLIC juce::juce_recommended_config_flags
          juce::juce_recommended_lto_flags
          juce::juce_recommended_warning_flags)

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "name": "Reference_Average_Default",
+  "description": "Example 10-band reference. Replace with a JSON exported by ClubAudioAnalyzer when available.",
+  "bands": [
+    {"index": 0, "min_hz": 20, "max_hz": 60, "energy_percent": 11.0},
+    {"index": 1, "min_hz": 60, "max_hz": 120, "energy_percent": 21.0},
+    {"index": 2, "min_hz": 120, "max_hz": 250, "energy_percent": 16.0},
+    {"index": 3, "min_hz": 250, "max_hz": 500, "energy_percent": 12.0},
+    {"index": 4, "min_hz": 500, "max_hz": 1000, "energy_percent": 10.0},
+    {"index": 5, "min_hz": 1000, "max_hz": 2000, "energy_percent": 8.0},
+    {"index": 6, "min_hz": 2000, "max_hz": 5000, "energy_percent": 10.0},
+    {"index": 7, "min_hz": 5000, "max_hz": 10000, "energy_percent": 6.0},
+    {"index": 8, "min_hz": 10000, "max_hz": 16000, "energy_percent": 4.0},
+    {"index": 9, "min_hz": 16000, "max_hz": 20000, "energy_percent": 2.0}
+  ]
+}

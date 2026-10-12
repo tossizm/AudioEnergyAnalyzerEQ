@@ -10,13 +10,13 @@ public:
     void paint(juce::Graphics&) override;
     void resized() override;
 private:
-    void chooseEqJson();
-    void chooseReferenceJson();
-    void refreshLabels();
     ClubAudioAnalyzerEQAudioProcessor& processor;
-    juce::TextButton loadEqButton { "EQ設定JSONを読み込む" };
-    juce::TextButton loadReferenceButton { "比率リファレンスJSONを読み込む" };
-    juce::Label titleLabel, eqLabel, referenceLabel, statusLabel, ratioLabel;
-    std::unique_ptr<juce::FileChooser> chooser;
+    juce::Label title, status;
+    juce::TextButton loadButton { "Load Reference JSON" }, resetButton { "Reset EQ" };
+    std::array<juce::Slider, ClubAudioAnalyzerEQAudioProcessor::bandCount> sliders;
+    std::array<juce::Label, ClubAudioAnalyzerEQAudioProcessor::bandCount> labels;
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, ClubAudioAnalyzerEQAudioProcessor::bandCount> attachments;
+    juce::FileChooser chooser { "Select ClubAudioAnalyzer reference JSON" };
+    void chooseJson();
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ClubAudioAnalyzerEQAudioProcessorEditor)
 };
