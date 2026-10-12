@@ -1,39 +1,21 @@
+```yaml
+name: Build ClubAudioAnalyzer EQ VST3
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  build-windows-vst3:
+    name: Build Windows VST3
     runs-on: windows-2022
+    timeout-minutes: 45
 
     steps:
-      - name: Checkout project
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Verify Visual Studio
-        shell: pwsh
-        run: |
-          Get-Command cmake
-          Get-Command cl -ErrorAction SilentlyContinue
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (!(Test-Path $vswhere)) {
-            throw "vswhere.exe not found"
-          }
-          & $vswhere -latest -products * -property installationPath
-          if ($LASTEXITCODE -ne 0) {
-            throw "Visual Studio installation not found"
-          }
-
-      - name: Configure MSVC environment
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      - name: Configure CMake
-        shell: pwsh
-        run: |
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-
-      - name: Build VST3
-        shell: pwsh
-        run: |
-          cmake --build build --config Release
