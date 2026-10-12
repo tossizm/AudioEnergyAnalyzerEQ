@@ -9,11 +9,11 @@ FetchContent_Declare(JUCE
 FetchContent_MakeAvailable(JUCE)
 
 juce_add_plugin(ClubAudioAnalyzerEQ
-  COMPANY_NAME "ClubAudioAnalyzer"
+  COMPANY_NAME "Tossizm"
   BUNDLE_ID "jp.clubaudioanalyzer.eq"
   PLUGIN_MANUFACTURER_CODE ClAu
   PLUGIN_CODE CaEq
-  PRODUCT_NAME "ClubAudioAnalyzer EQ"
+  PRODUCT_NAME "ClubAudioAnalyzerEQ"
   DESCRIPTION "10-band reference-driven EQ for ClubAudioAnalyzer"
   IS_SYNTH FALSE
   NEEDS_MIDI_INPUT FALSE

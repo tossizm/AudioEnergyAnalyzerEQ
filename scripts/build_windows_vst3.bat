@@ -10,7 +10,7 @@ echo Configuring project; JUCE will be downloaded by CMake on first run.
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64 || goto :error
 cmake --build build --config Release --target ClubAudioAnalyzerEQ_VST3 --parallel || goto :error
 echo.
-echo Build completed. Find the .vst3 bundle under build\ClubAudioAnalyzerEQ_artefacts\Release\VST3\
+echo Build completed. Find ClubAudioAnalyzerEQ.vst3 under build\ClubAudioAnalyzerEQ_artefacts\Release\VST3\
 pause
 exit /b 0
 :error

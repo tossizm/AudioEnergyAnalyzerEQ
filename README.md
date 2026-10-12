@@ -26,7 +26,7 @@ Install Visual Studio 2022 with **Desktop development with C++**, CMake 3.22+, a
 
 ## Loading the VST3
 
-Copy the built `ClubAudioAnalyzer EQ.vst3` bundle to `%CommonProgramFiles%\VST3` (typically `C:\Program Files\Common Files\VST3`) and rescan plug-ins in your DAW. Close the DAW before replacing an installed bundle.
+The workflow artifact ZIP contains `Tossizm\ClubAudioAnalyzerEQ.vst3` plus the reference JSON. Close Ableton Live, then copy the entire `Tossizm\ClubAudioAnalyzerEQ.vst3` bundle folder into `C:\Program Files\Common Files\VST3\Tossizm\`. The expected binary path is `C:\Program Files\Common Files\VST3\Tossizm\ClubAudioAnalyzerEQ.vst3\Contents\x86_64-win\ClubAudioAnalyzerEQ.vst3`. Do not copy only the inner `.vst3` binary. Restart Live and run a plug-in rescan.
 
 ## JSON integration: important limitations
 
