@@ -1,67 +1,132 @@
-name: Build ClubAudioAnalyzer EQ VST3
 
-on:
+name: Build ClubAudioAnalyzerEQ VST3 (Windows)
+
+'on':
   push:
-    branches: [main, master]
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
-  build-windows-vst3:
-    name: Build Windows VST3
-    runs-on: windows-2022
-    timeout-minutes: 45
+  build:
+    runs-on: windows-latest
 
     steps:
-      - name: Checkout project
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify Visual Studio and CMake
-        shell: pwsh
-        run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (!(Test-Path $vswhere)) { throw "vswhere.exe not found" }
-          $vs = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          if (!$vs) { throw "Visual Studio C++ build tools not found" }
-          Write-Host "Visual Studio: $vs"
-          cmake --version
-          if ($LASTEXITCODE -ne 0) { throw "CMake not available" }
-
-      - name: Enable MSVC environment
+      - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
 
       - name: Configure CMake
-        shell: pwsh
-        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+        run: cmake -S . -B build -A x64
 
       - name: Build VST3
-        shell: pwsh
-        run: cmake --build build --config Release --target ClubAudioAnalyzerEQ_VST3 --parallel
+        run: cmake --build build --config Release --target ClubAudioAnalyzerEQ_VST3
 
-      - name: Package VST3 and reference JSON
+      - name: Package VST3 in Ableton-compatible folder layout
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $plugin = Get-ChildItem -Path build -Recurse -Directory -Filter "ClubAudioAnalyzer EQ.vst3" | Select-Object -First 1
-          if (!$plugin) { throw "VST3 bundle not found under build/" }
-          $json = "config\Reference_Average_Default.json"
-          if (!(Test-Path $json)) { throw "Reference JSON not found: $json" }
-          if (Test-Path "dist") { Remove-Item "dist" -Recurse -Force }
-          New-Item -ItemType Directory -Path "dist" -Force | Out-Null
-          Copy-Item -Path $plugin.FullName -Destination "dist" -Recurse -Force
-          Copy-Item -Path $json -Destination "dist" -Force
-          Compress-Archive -Path "dist\*" -DestinationPath "ClubAudioAnalyzerEQ-Windows-VST3.zip" -Force
-          if (!(Test-Path "ClubAudioAnalyzerEQ-Windows-VST3.zip")) { throw "Artifact ZIP was not created" }
 
-      - name: Upload VST3 artifact
+          # Locate the VST3 binary regardless of the generated bundle directory name.
+          $binaryCandidates = Get-ChildItem -Path "build" -Recurse -File -Filter "*.vst3" |
+            Where-Object { $_.FullName -match "[\\/]Contents[\\/]x86_64-win[\\/]" }
+
+          if (!$binaryCandidates) {
+            Write-Host "No VST3 binary found. Build output tree follows:"
+            Get-ChildItem -Path "build" -Recurse -Force |
+              Select-Object -ExpandProperty FullName |
+              Select-Object -First 300 |
+              ForEach-Object { Write-Host $_ }
+
+            throw "VST3 binary not found under build/**/Contents/x86_64-win/*.vst3"
+          }
+
+          $binary = $binaryCandidates |
+            Where-Object { $_.Name -eq "ClubAudioAnalyzerEQ.vst3" } |
+            Select-Object -First 1
+
+          if (!$binary) {
+            Write-Host "Found VST3 binary candidates:"
+            $binaryCandidates | ForEach-Object {
+              Write-Host $_.FullName
+            }
+
+            throw "Expected internal binary ClubAudioAnalyzerEQ.vst3 was not produced. Check PRODUCT_NAME in CMakeLists.txt."
+          }
+
+          # Binary path:
+          # <bundle>\Contents\x86_64-win\ClubAudioAnalyzerEQ.vst3
+          $bundle = $binary.Directory.Parent.Parent
+
+          Write-Host "Detected bundle: $($bundle.FullName)"
+          Write-Host "Detected binary: $($binary.FullName)"
+
+          # Ensure the reference JSON exists.
+          $json = "config\Reference_Average_Default.json"
+
+          if (!(Test-Path $json -PathType Leaf)) {
+            throw "Reference JSON not found: $json"
+          }
+
+          # Create the required installation folder layout.
+          if (Test-Path "dist") {
+            Remove-Item "dist" -Recurse -Force
+          }
+
+          $installRoot = "dist\Tossizm"
+          New-Item -ItemType Directory -Path $installRoot -Force | Out-Null
+
+          # Use the required outer bundle name.
+          $destinationBundle = Join-Path $installRoot "ClubAudioAnalyzerEQ.vst3"
+
+          Copy-Item `
+            -Path $bundle.FullName `
+            -Destination $destinationBundle `
+            -Recurse `
+            -Force
+
+          # Include the default reference JSON at the ZIP root.
+          Copy-Item `
+            -Path $json `
+            -Destination "dist" `
+            -Force
+
+          # Verify the exact expected internal binary path.
+          $expected = "dist\Tossizm\ClubAudioAnalyzerEQ.vst3\Contents\x86_64-win\ClubAudioAnalyzerEQ.vst3"
+
+          if (!(Test-Path $expected -PathType Leaf)) {
+            Write-Host "Packaged bundle contents:"
+            Get-ChildItem -Path $destinationBundle -Recurse -Force |
+              Select-Object -ExpandProperty FullName |
+              ForEach-Object { Write-Host $_ }
+
+            throw "Packaged VST3 binary missing: $expected"
+          }
+
+          # Create the downloadable artifact ZIP.
+          $zip = "ClubAudioAnalyzerEQ-Windows-VST3.zip"
+
+          if (Test-Path $zip) {
+            Remove-Item $zip -Force
+          }
+
+          Compress-Archive -Path "dist\*" -DestinationPath $zip -Force
+
+          if (!(Test-Path $zip -PathType Leaf)) {
+            throw "Artifact ZIP was not created"
+          }
+
+          Write-Host "Packaged install path:"
+          Write-Host "Tossizm\ClubAudioAnalyzerEQ.vst3\Contents\x86_64-win\ClubAudioAnalyzerEQ.vst3"
+
+      - name: Upload Windows VST3 artifact
         uses: actions/upload-artifact@v4
         with:
           name: ClubAudioAnalyzerEQ-Windows-VST3
           path: ClubAudioAnalyzerEQ-Windows-VST3.zip
           if-no-files-found: error
-          retention-days: 30
