@@ -1,7 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include <array>
-#include <cmath>
+#include <cmath>\n#include <limits>
 
 const std::array<float, ClubAudioAnalyzerEQAudioProcessor::bandCount> ClubAudioAnalyzerEQAudioProcessor::centresHz
     = { 40.0f, 84.85f, 173.2f, 353.55f, 707.1f, 1414.2f, 3162.3f, 7071.1f, 12649.1f, 17888.5f };
@@ -41,6 +41,34 @@ float ClubAudioAnalyzerEQAudioProcessor::getBandGain(int index) const
     const auto* p=parameters.getRawParameterValue("band"+juce::String(index));
     return p?p->load():0.0f;
 }
+// Evaluate the exact JUCE peak-filter transfer function in dB. This mirrors
+// makePeakFilter() used by the audio path instead of the former bell-shaped
+// approximation, so the plotted response describes the actual serial biquads.
+static double peakFilterMagnitudeDb(double frequency, double centre, double q,
+                                    double gainDb, double sampleRate)
+{
+    if (frequency <= 0.0 || sampleRate <= 0.0)
+        return 0.0;
+
+    const double safeCentre = juce::jlimit(1.0, sampleRate * 0.45, centre);
+    auto coefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(
+        sampleRate, safeCentre, q,
+        juce::Decibels::decibelsToGain((float)gainDb));
+    const auto* c = coefficients->getRawCoefficients(); // b0, b1, b2, a0, a1, a2
+    const double omega = juce::MathConstants<double>::twoPi * frequency / sampleRate;
+    const double c1 = std::cos(omega), s1 = std::sin(omega);
+    const double c2 = std::cos(2.0 * omega), s2 = std::sin(2.0 * omega);
+    const double nr = c[0] + c[1] * c1 + c[2] * c2;
+    const double ni = -c[1] * s1 - c[2] * s2;
+    const double dr = c[3] + c[4] * c1 + c[5] * c2;
+    const double di = -c[4] * s1 - c[5] * s2;
+    const double numerator = nr * nr + ni * ni;
+    const double denominator = dr * dr + di * di;
+    if (numerator <= 0.0 || denominator <= 0.0)
+        return -120.0;
+    return 10.0 * std::log10(numerator / denominator);
+}
+
 double ClubAudioAnalyzerEQAudioProcessor::bellResponse(double frequency,double centre,double q)
 {
     if(frequency<=0||centre<=0) return 0.0;
@@ -49,8 +77,17 @@ double ClubAudioAnalyzerEQAudioProcessor::bellResponse(double frequency,double c
 }
 float ClubAudioAnalyzerEQAudioProcessor::getResponseDb(float frequency) const
 {
-    double total=0.0;
-    for(int i=0;i<bandCount;++i) total+=getBandGain(i)*bellResponse(frequency,centresHz[(size_t)i],qValues[(size_t)i]);
+    if (currentSampleRate <= 0.0 || frequency <= 0.0f)
+        return 0.0f;
+
+    // The ten filters run in series, therefore their dB magnitudes add.
+    double total = 0.0;
+    const double safeFrequency = juce::jlimit(1.0, currentSampleRate * 0.499,
+                                               (double)frequency);
+    for (int i = 0; i < bandCount; ++i)
+        total += peakFilterMagnitudeDb(safeFrequency, centresHz[(size_t)i],
+                                       qValues[(size_t)i], getBandGain(i),
+                                       currentSampleRate);
     return (float)total;
 }
 void ClubAudioAnalyzerEQAudioProcessor::updateFilters()
@@ -81,30 +118,61 @@ void ClubAudioAnalyzerEQAudioProcessor::processBlock(juce::AudioBuffer<float>& b
 }
 void ClubAudioAnalyzerEQAudioProcessor::optimizeGains(const std::array<double,bandCount>& desiredDb)
 {
-    double a[bandCount][bandCount]{};
-    double x[bandCount]{};
-    for(int row=0;row<bandCount;++row)
-        for(int col=0;col<bandCount;++col)
-            a[row][col]=bellResponse(centresHz[(size_t)row],centresHz[(size_t)col],qValues[(size_t)col]);
-    // Coordinate descent minimizes all band-centre residuals together, with a small
-    // regularizer to avoid extreme boosts where filters overlap.
-    for(int i=0;i<bandCount;++i) x[i]=0.0;
-    for(int iteration=0;iteration<180;++iteration)
-        for(int col=0;col<bandCount;++col)
+    // Non-linear coordinate descent using the same JUCE peak-filter transfer
+    // function as the audio path and response graph. The objective is the sum
+    // of squared errors at all ten band centres plus a mild gain regularizer.
+    std::array<double, bandCount> gains{};
+    const double sampleRate = juce::jmax(22050.0, currentSampleRate);
+    constexpr double gainLimit = 12.0;
+    constexpr double gainStep = 0.25;
+    constexpr double regularization = 0.025;
+    constexpr int iterations = 24;
+
+    auto responseAt = [&](int row, const std::array<double, bandCount>& candidate)
+    {
+        double response = 0.0;
+        for (int band = 0; band < bandCount; ++band)
+            response += peakFilterMagnitudeDb(centresHz[(size_t)row],
+                centresHz[(size_t)band], qValues[(size_t)band],
+                candidate[(size_t)band], sampleRate);
+        return response;
+    };
+
+    for (int iteration = 0; iteration < iterations; ++iteration)
+    {
+        double largestChange = 0.0;
+        for (int col = 0; col < bandCount; ++col)
         {
-            double numerator=0.0,denominator=0.10;
-            for(int row=0;row<bandCount;++row)
+            double bestCost = std::numeric_limits<double>::infinity();
+            double bestGain = gains[(size_t)col];
+            for (int step = -48; step <= 48; ++step)
             {
-                double residual=desiredDb[(size_t)row];
-                for(int k=0;k<bandCount;++k) if(k!=col) residual-=a[row][k]*x[k];
-                numerator+=a[row][col]*residual;
-                denominator+=a[row][col]*a[row][col];
+                const double trialGain = step * gainStep;
+                auto trial = gains;
+                trial[(size_t)col] = trialGain;
+                double cost = regularization * trialGain * trialGain;
+                for (int row = 0; row < bandCount; ++row)
+                {
+                    const double error = responseAt(row, trial) - desiredDb[(size_t)row];
+                    cost += error * error;
+                }
+                if (cost < bestCost)
+                {
+                    bestCost = cost;
+                    bestGain = trialGain;
+                }
             }
-            x[col]=juce::jlimit(-12.0,12.0,numerator/denominator);
+            largestChange = juce::jmax(largestChange,
+                std::abs(bestGain - gains[(size_t)col]));
+            gains[(size_t)col] = bestGain;
         }
-    for(int i=0;i<bandCount;++i)
-        if(auto* p=parameters.getParameter("band"+juce::String(i)))
-            p->setValueNotifyingHost(p->convertTo0to1((float)x[i]));
+        if (largestChange < gainStep)
+            break;
+    }
+
+    for (int i = 0; i < bandCount; ++i)
+        if (auto* p = parameters.getParameter("band" + juce::String(i)))
+            p->setValueNotifyingHost(p->convertTo0to1((float)gains[(size_t)i]));
 }
 bool ClubAudioAnalyzerEQAudioProcessor::loadAnalysisTxt(const juce::File& file,juce::String& message)
 {
