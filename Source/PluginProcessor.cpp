@@ -49,7 +49,7 @@ void ClubAudioAnalyzerEQAudioProcessor::updateFilters()
         const float gain = raw != nullptr ? raw->load() : 0.0f;
         if (std::abs(gain - lastGainDb[(size_t)i]) < 0.005f) continue;
         lastGainDb[(size_t)i] = gain;
-        const auto frequency = juce::jlimit(20.0, currentSampleRate * 0.45, (double)centresHz[(size_t)i]);
+        const auto frequency = (float) juce::jlimit(20.0, currentSampleRate * 0.45, (double)centresHz[(size_t)i]);
         auto coeff = juce::dsp::IIR::Coefficients<float>::makePeakFilter(currentSampleRate,
             frequency, 1.0f, juce::Decibels::decibelsToGain(gain));
         for (auto& filter : filters[(size_t)i]) filter.coefficients = coeff;
@@ -76,7 +76,7 @@ void ClubAudioAnalyzerEQAudioProcessor::processBlock(juce::AudioBuffer<float>& b
 bool ClubAudioAnalyzerEQAudioProcessor::loadReferenceJson(const juce::File& file, juce::String& message)
 {
     juce::var root;
-    const auto parsed = juce::JSON::parse(file, root);
+    const auto parsed = juce::JSON::parse(file.loadFileAsString(), root);
     if (parsed.failed()) { message = "JSON parse error: " + parsed.getErrorMessage(); return false; }
     auto* obj = root.getDynamicObject();
     if (obj == nullptr) { message = "JSON root must be an object."; return false; }
