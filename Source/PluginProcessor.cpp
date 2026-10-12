@@ -109,7 +109,22 @@ void ClubAudioAnalyzerEQAudioProcessor::optimizeGains(const std::array<double,ba
 bool ClubAudioAnalyzerEQAudioProcessor::loadAnalysisTxt(const juce::File& file,juce::String& message)
 {
     if(!file.existsAsFile()){message="TXT file does not exist.";return false;}
-    const auto lines=juce::StringArray::fromLines(file.loadFileAsString());
+    const auto fileText = file.loadFileAsString();
+    const auto lines=juce::StringArray::fromLines(fileText);
+    // The analyzer TXT may include a reference name in its metadata. Accept common
+    // English labels and preserve the text after the separator for display.
+    for (const auto& rawLine : lines)
+    {
+        const auto line = rawLine.trim();
+        const auto lower = line.toLowerCase();
+        int separator = line.indexOfChar(':');
+        if (separator < 0) separator = line.indexOfChar('\uFF1A');
+        if (separator > 0 && (lower.startsWith("reference") || lower.startsWith("リファレンスデータ")))
+        {
+            auto candidate = line.substring(separator + 1).trim();
+            if (candidate.isNotEmpty()) { referenceName = candidate; break; }
+        }
+    }
     std::array<double,bandCount> desired{}; std::array<bool,bandCount> found{};
     const double lows[bandCount]={20,60,120,250,500,1000,2000,5000,10000,16000};
     const double highs[bandCount]={60,120,250,500,1000,2000,5000,10000,16000,20000};
@@ -153,7 +168,7 @@ bool ClubAudioAnalyzerEQAudioProcessor::loadAnalysisTxt(const juce::File& file,j
         return false;
     }
     optimizeGains(desired);
-    referenceName=file.getFileName();
+    if (referenceName.isEmpty()) referenceName = "Not specified in TXT";
     message="Loaded "+juce::String(count)+"/10 band Diff values; jointly optimized the 10 EQ filters.";
     return true;
 }
