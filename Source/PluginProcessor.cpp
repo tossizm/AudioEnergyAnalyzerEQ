@@ -111,29 +111,47 @@ bool ClubAudioAnalyzerEQAudioProcessor::loadAnalysisTxt(const juce::File& file,j
     if(!file.existsAsFile()){message="TXT file does not exist.";return false;}
     const auto lines=juce::StringArray::fromLines(file.loadFileAsString());
     std::array<double,bandCount> desired{}; std::array<bool,bandCount> found{};
-    const juce::StringArray labels={"20~60 Hz","60~120 Hz","120~250 Hz","250~500 Hz","500~1000 Hz","1000~2000 Hz","2000~5000 Hz","5000~10000 Hz","10000~16000 Hz","16000~20000 Hz"};
+    const double lows[bandCount]={20,60,120,250,500,1000,2000,5000,10000,16000};
+    const double highs[bandCount]={60,120,250,500,1000,2000,5000,10000,16000,20000};
+    bool headerSeen=false;
     for(const auto& line:lines)
     {
         if(!line.contains("|")) continue;
         auto cols=juce::StringArray::fromTokens(line,"|","");
         if(cols.size()<6) continue;
-        const auto bandText=cols[0].trim().replace("–","~").replace("-","~");
+        // Require the actual analyzer table header before interpreting column 5 as Diff.
+        if(cols[0].trim().equalsIgnoreCase("Band"))
+        {
+            headerSeen=false;
+            for(const auto& col:cols) if(col.trim().equalsIgnoreCase("Diff")) headerSeen=true;
+            continue;
+        }
+        if(!headerSeen) continue;
+        const auto bandText=cols[0].trim().replace(" ","").replace("–","~").replace("—","~").replace("-","~");
         int index=-1;
         for(int i=0;i<bandCount;++i)
         {
-            auto norm=labels[i].replace("–","~");
-            if(bandText.containsIgnoreCase(norm)){index=i;break;}
+            const auto lo=juce::String((int)lows[i]), hi=juce::String((int)highs[i]);
+            const auto compact=lo+"~"+hi+"Hz";
+            const auto compactNoHz=lo+"~"+hi;
+            if(bandText.equalsIgnoreCase(compact)||bandText.equalsIgnoreCase(compactNoHz)){index=i;break;}
         }
         if(index<0) continue;
-        auto diffText=cols[5].trim().replace("dB","");
+        const auto diffText=cols[5].trim().replace("dB","").replace("%","").trim();
         const double diff=diffText.getDoubleValue();
         if(!std::isfinite(diff)) continue;
+        // Analyzer convention: Diff = Sample - Target, so the first-pass correction is -Diff.
         desired[(size_t)index]=-diff;
         found[(size_t)index]=true;
     }
     int count=0; for(bool b:found) if(b) ++count;
-    if(count==0){message="No band Diff values found. Expected the ClubAudioAnalyzer TXT table with Band and Diff columns.";return false;}
-    // Missing bands remain at 0 dB correction; optimize the complete 10-band curve.
+    if(count==0)
+    {
+        message=headerSeen
+            ? "No band rows parsed. Expected rows like '20 ~ 60 Hz | ... | +11.22 dB | ...'."
+            : "Analyzer table header not found. Expected 'Band | Pre % | Correlation | Post % | EQ | Diff | Sample | Target'.";
+        return false;
+    }
     optimizeGains(desired);
     referenceName=file.getFileName();
     message="Loaded "+juce::String(count)+"/10 band Diff values; jointly optimized the 10 EQ filters.";
