@@ -118,7 +118,7 @@ bool ClubAudioAnalyzerEQAudioProcessor::loadAnalysisTxt(const juce::File& file,j
         const auto line = rawLine.trim();
         const auto lower = line.toLowerCase();
         int separator = line.indexOfChar(':');
-        if (separator < 0) separator = line.indexOfChar('\uFF1A');
+        if (separator < 0) separator = line.indexOfChar((juce_wchar)0xFF1A);
         if (separator > 0 && (lower.startsWith("reference") || lower.startsWith("リファレンスデータ")))
         {
             auto candidate = line.substring(separator + 1).trim();
