@@ -3,10 +3,10 @@
 #include <array>
 #include <cmath>
 
-const std::array<float, ClubAudioAnalyzerEQAudioProcessor::bandCount> ClubAudioAnalyzerEQAudioProcessor::centresHz
+const std::array<float, AudioEnergyAnalyzerEQAudioProcessor::bandCount> AudioEnergyAnalyzerEQAudioProcessor::centresHz
     = { 40.0f, 84.85f, 173.2f, 353.55f, 707.1f, 1414.2f, 3162.3f, 7071.1f, 12649.1f, 17888.5f };
 
-ClubAudioAnalyzerEQAudioProcessor::ClubAudioAnalyzerEQAudioProcessor()
+AudioEnergyAnalyzerEQAudioProcessor::AudioEnergyAnalyzerEQAudioProcessor()
     : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
                                     .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       parameters(*this, nullptr, "PARAMETERS", createParameterLayout())
@@ -14,7 +14,7 @@ ClubAudioAnalyzerEQAudioProcessor::ClubAudioAnalyzerEQAudioProcessor()
     lastGainDb.fill(999.0f);
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout ClubAudioAnalyzerEQAudioProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout AudioEnergyAnalyzerEQAudioProcessor::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     for (int i = 0; i < bandCount; ++i)
@@ -23,7 +23,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ClubAudioAnalyzerEQAudioProc
     return layout;
 }
 
-void ClubAudioAnalyzerEQAudioProcessor::prepareToPlay(double sampleRate, int)
+void AudioEnergyAnalyzerEQAudioProcessor::prepareToPlay(double sampleRate, int)
 {
     currentSampleRate = sampleRate;
     juce::dsp::ProcessSpec spec { sampleRate, 2048, (juce::uint32) juce::jmax(1, getTotalNumOutputChannels()) };
@@ -33,15 +33,15 @@ void ClubAudioAnalyzerEQAudioProcessor::prepareToPlay(double sampleRate, int)
     lastGainDb.fill(999.0f);
     updateFilters();
 }
-void ClubAudioAnalyzerEQAudioProcessor::releaseResources() {}
-bool ClubAudioAnalyzerEQAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
+void AudioEnergyAnalyzerEQAudioProcessor::releaseResources() {}
+bool AudioEnergyAnalyzerEQAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
     const auto out = layouts.getMainOutputChannelSet();
     return (out == juce::AudioChannelSet::mono() || out == juce::AudioChannelSet::stereo())
         && out == layouts.getMainInputChannelSet();
 }
 
-void ClubAudioAnalyzerEQAudioProcessor::updateFilters()
+void AudioEnergyAnalyzerEQAudioProcessor::updateFilters()
 {
     for (int i = 0; i < bandCount; ++i)
     {
@@ -56,7 +56,7 @@ void ClubAudioAnalyzerEQAudioProcessor::updateFilters()
     }
 }
 
-void ClubAudioAnalyzerEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void AudioEnergyAnalyzerEQAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
     const int inputChannels = getTotalNumInputChannels();
@@ -73,7 +73,7 @@ void ClubAudioAnalyzerEQAudioProcessor::processBlock(juce::AudioBuffer<float>& b
         }
 }
 
-bool ClubAudioAnalyzerEQAudioProcessor::loadReferenceJson(const juce::File& file, juce::String& message)
+bool AudioEnergyAnalyzerEQAudioProcessor::loadReferenceJson(const juce::File& file, juce::String& message)
 {
     juce::var root;
     const auto parsed = juce::JSON::parse(file.loadFileAsString(), root);
@@ -126,17 +126,17 @@ bool ClubAudioAnalyzerEQAudioProcessor::loadReferenceJson(const juce::File& file
     return true;
 }
 
-void ClubAudioAnalyzerEQAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
+void AudioEnergyAnalyzerEQAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     auto state = parameters.copyState();
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     copyXmlToBinary(*xml, destData);
 }
-void ClubAudioAnalyzerEQAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
+void AudioEnergyAnalyzerEQAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
     if (xml != nullptr && xml->hasTagName(parameters.state.getType()))
         parameters.replaceState(juce::ValueTree::fromXml(*xml));
 }
-juce::AudioProcessorEditor* ClubAudioAnalyzerEQAudioProcessor::createEditor() { return new ClubAudioAnalyzerEQAudioProcessorEditor(*this); }
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new ClubAudioAnalyzerEQAudioProcessor(); }
+juce::AudioProcessorEditor* AudioEnergyAnalyzerEQAudioProcessor::createEditor() { return new AudioEnergyAnalyzerEQAudioProcessorEditor(*this); }
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new AudioEnergyAnalyzerEQAudioProcessor(); }
