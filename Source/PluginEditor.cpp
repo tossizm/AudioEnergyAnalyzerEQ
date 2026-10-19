@@ -1,10 +1,10 @@
 #include "PluginEditor.h"
 
-ClubAudioAnalyzerEQAudioProcessorEditor::ClubAudioAnalyzerEQAudioProcessorEditor(ClubAudioAnalyzerEQAudioProcessor& p)
+AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEditor(AudioEnergyAnalyzerEQAudioProcessor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
     setSize(1000, 420);
-    title.setText("ClubAudioAnalyzer EQ", juce::dontSendNotification);
+    title.setText("AudioEnergyAnalyzer EQ", juce::dontSendNotification);
     title.setFont(juce::Font(24.0f, juce::Font::bold)); title.setColour(juce::Label::textColourId, juce::Colours::white); addAndMakeVisible(title);
     status.setText("Reference: " + processor.getReferenceName(), juce::dontSendNotification);
     status.setColour(juce::Label::textColourId, juce::Colours::lightblue); addAndMakeVisible(status);
@@ -19,17 +19,17 @@ ClubAudioAnalyzerEQAudioProcessorEditor::ClubAudioAnalyzerEQAudioProcessorEditor
         attachments[(size_t)i]=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processor.parameters,"band"+juce::String(i),s);
     }
 }
-void ClubAudioAnalyzerEQAudioProcessorEditor::chooseJson()
+void AudioEnergyAnalyzerEQAudioProcessorEditor::chooseJson()
 {
     chooser.launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
         [this](const juce::FileChooser& fc) { const auto file=fc.getResult(); if (file.existsAsFile()) { juce::String msg; const bool ok=processor.loadReferenceJson(file,msg); status.setText((ok?"OK: ":"Error: ")+msg,juce::dontSendNotification); } });
 }
-void ClubAudioAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
+void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colour::fromRGB(1,0,102));
     g.setColour(juce::Colours::white.withAlpha(0.25f)); g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(5.0f), 8.0f, 1.0f);
 }
-void ClubAudioAnalyzerEQAudioProcessorEditor::resized()
+void AudioEnergyAnalyzerEQAudioProcessorEditor::resized()
 {
     auto area=getLocalBounds().reduced(16); auto top=area.removeFromTop(36); title.setBounds(top.removeFromLeft(340)); resetButton.setBounds(top.removeFromRight(100)); loadButton.setBounds(top.removeFromRight(190).reduced(4,0));
     status.setBounds(area.removeFromTop(30));
