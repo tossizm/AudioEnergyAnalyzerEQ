@@ -1,11 +1,11 @@
 #pragma once
 #include <JuceHeader.h>
 
-class ClubAudioAnalyzerEQAudioProcessor final : public juce::AudioProcessor
+class AudioEnergyAnalyzerEQAudioProcessor final : public juce::AudioProcessor
 {
 public:
-    ClubAudioAnalyzerEQAudioProcessor();
-    ~ClubAudioAnalyzerEQAudioProcessor() override = default;
+    AudioEnergyAnalyzerEQAudioProcessor();
+    ~AudioEnergyAnalyzerEQAudioProcessor() override = default;
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -40,5 +40,5 @@ private:
     double currentSampleRate = 44100.0;
     juce::String referenceName { "Manual / default" };
     void updateFilters();
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ClubAudioAnalyzerEQAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioEnergyAnalyzerEQAudioProcessor)
 };
