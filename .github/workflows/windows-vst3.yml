@@ -1,5 +1,4 @@
-
-name: Build ClubAudioAnalyzerEQ VST3 (Windows)
+name: Build AudioEnergyAnalyzerEQ VST3 (Windows)
 
 'on':
   push:
@@ -12,7 +11,7 @@ name: Build ClubAudioAnalyzerEQ VST3 (Windows)
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Checkout repository
@@ -25,108 +24,54 @@ jobs:
         run: cmake -S . -B build -A x64
 
       - name: Build VST3
-        run: cmake --build build --config Release --target ClubAudioAnalyzerEQ_VST3
+        run: cmake --build build --config Release --target AudioEnergyAnalyzerEQ_VST3
 
-      - name: Package VST3 in Ableton-compatible folder layout
+      - name: Package VST3 in DAW-compatible folder layout
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-
-          # Locate the VST3 binary regardless of the generated bundle directory name.
-          $binaryCandidates = Get-ChildItem -Path "build" -Recurse -File -Filter "*.vst3" |
+          $binaryCandidates = Get-ChildItem -Path "build" -Recurse -File -Filter "AudioEnergyAnalyzerEQ.vst3" |
             Where-Object { $_.FullName -match "[\\/]Contents[\\/]x86_64-win[\\/]" }
 
           if (!$binaryCandidates) {
-            Write-Host "No VST3 binary found. Build output tree follows:"
+            Write-Host "No AudioEnergyAnalyzerEQ VST3 binary found. Build output tree follows:"
             Get-ChildItem -Path "build" -Recurse -Force |
               Select-Object -ExpandProperty FullName |
               Select-Object -First 300 |
               ForEach-Object { Write-Host $_ }
-
-            throw "VST3 binary not found under build/**/Contents/x86_64-win/*.vst3"
+            throw "VST3 binary not found under build/**/Contents/x86_64-win/AudioEnergyAnalyzerEQ.vst3"
           }
 
-          $binary = $binaryCandidates |
-            Where-Object { $_.Name -eq "ClubAudioAnalyzerEQ.vst3" } |
-            Select-Object -First 1
-
-          if (!$binary) {
-            Write-Host "Found VST3 binary candidates:"
-            $binaryCandidates | ForEach-Object {
-              Write-Host $_.FullName
-            }
-
-            throw "Expected internal binary ClubAudioAnalyzerEQ.vst3 was not produced. Check PRODUCT_NAME in CMakeLists.txt."
-          }
-
-          # Binary path:
-          # <bundle>\Contents\x86_64-win\ClubAudioAnalyzerEQ.vst3
+          $binary = $binaryCandidates | Select-Object -First 1
           $bundle = $binary.Directory.Parent.Parent
-
           Write-Host "Detected bundle: $($bundle.FullName)"
           Write-Host "Detected binary: $($binary.FullName)"
 
-          # Ensure the reference JSON exists.
           $json = "config\Reference_Average_Default.json"
+          if (!(Test-Path $json -PathType Leaf)) { throw "Reference JSON not found: $json" }
 
-          if (!(Test-Path $json -PathType Leaf)) {
-            throw "Reference JSON not found: $json"
-          }
-
-          # Create the required installation folder layout.
-          if (Test-Path "dist") {
-            Remove-Item "dist" -Recurse -Force
-          }
-
+          if (Test-Path "dist") { Remove-Item "dist" -Recurse -Force }
           $installRoot = "dist\Tossizm"
           New-Item -ItemType Directory -Path $installRoot -Force | Out-Null
+          $destinationBundle = Join-Path $installRoot "AudioEnergyAnalyzerEQ.vst3"
+          Copy-Item -Path $bundle.FullName -Destination $destinationBundle -Recurse -Force
+          Copy-Item -Path $json -Destination "dist" -Force
 
-          # Use the required outer bundle name.
-          $destinationBundle = Join-Path $installRoot "ClubAudioAnalyzerEQ.vst3"
-
-          Copy-Item `
-            -Path $bundle.FullName `
-            -Destination $destinationBundle `
-            -Recurse `
-            -Force
-
-          # Include the default reference JSON at the ZIP root.
-          Copy-Item `
-            -Path $json `
-            -Destination "dist" `
-            -Force
-
-          # Verify the exact expected internal binary path.
-          $expected = "dist\Tossizm\ClubAudioAnalyzerEQ.vst3\Contents\x86_64-win\ClubAudioAnalyzerEQ.vst3"
-
+          $expected = "dist\Tossizm\AudioEnergyAnalyzerEQ.vst3\Contents\x86_64-win\AudioEnergyAnalyzerEQ.vst3"
           if (!(Test-Path $expected -PathType Leaf)) {
-            Write-Host "Packaged bundle contents:"
-            Get-ChildItem -Path $destinationBundle -Recurse -Force |
-              Select-Object -ExpandProperty FullName |
-              ForEach-Object { Write-Host $_ }
-
+            Get-ChildItem -Path $destinationBundle -Recurse -Force | Select-Object -ExpandProperty FullName | ForEach-Object { Write-Host $_ }
             throw "Packaged VST3 binary missing: $expected"
           }
 
-          # Create the downloadable artifact ZIP.
-          $zip = "ClubAudioAnalyzerEQ-Windows-VST3.zip"
-
-          if (Test-Path $zip) {
-            Remove-Item $zip -Force
-          }
-
+          $zip = "AudioEnergyAnalyzerEQ-Windows-VST3.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
           Compress-Archive -Path "dist\*" -DestinationPath $zip -Force
-
-          if (!(Test-Path $zip -PathType Leaf)) {
-            throw "Artifact ZIP was not created"
-          }
-
-          Write-Host "Packaged install path:"
-          Write-Host "Tossizm\ClubAudioAnalyzerEQ.vst3\Contents\x86_64-win\ClubAudioAnalyzerEQ.vst3"
+          if (!(Test-Path $zip -PathType Leaf)) { throw "Artifact ZIP was not created" }
+          Write-Host "Packaged install path: Tossizm\AudioEnergyAnalyzerEQ.vst3\Contents\x86_64-win\AudioEnergyAnalyzerEQ.vst3"
 
       - name: Upload Windows VST3 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ClubAudioAnalyzerEQ-Windows-VST3
-          path: ClubAudioAnalyzerEQ-Windows-VST3.zip
+          name: AudioEnergyAnalyzerEQ-Windows-VST3
+          path: AudioEnergyAnalyzerEQ-Windows-VST3.zip
           if-no-files-found: error
