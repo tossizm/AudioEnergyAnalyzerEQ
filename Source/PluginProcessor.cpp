@@ -4,6 +4,7 @@
 #include <cmath>
 #include <regex>
 #include <string>
+#include <vector>
 
 const std::array<float, AudioEnergyAnalyzerEQAudioProcessor::bandCount> AudioEnergyAnalyzerEQAudioProcessor::centresHz
     = { 40.0f, 84.85f, 173.2f, 353.55f, 707.1f, 1414.2f, 3162.3f, 7071.1f, 12649.1f, 17888.5f };
@@ -88,7 +89,7 @@ bool AudioEnergyAnalyzerEQAudioProcessor::loadAnalysisTxt(const juce::File& file
     const auto text = file.loadFileAsString();
     const std::string source = text.toStdString();
     const std::regex bellPattern(
-        R"(Bell\\s*,\\s*([0-9]+(?:\\.[0-9]+)?)\\s*Hz\\s*,\\s*([-+]?[0-9]+(?:\\.[0-9]+)?)\\s*dB\\s*,\\s*Q\\s*([0-9]+(?:\\.[0-9]+)?))",
+        R"(Bell\s*,\s*([0-9]+(?:\.[0-9]+)?)\s*Hz\s*,\s*([-+]?[0-9]+(?:\.[0-9]+)?)\s*dB\s*,\s*Q\s*([0-9]+(?:\.[0-9]+)?))",
         std::regex_constants::icase);
     std::vector<std::array<float, 3>> parsedBands;
     for (std::sregex_iterator it(source.begin(), source.end(), bellPattern), end; it != end; ++it)
