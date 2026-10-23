@@ -28,6 +28,9 @@ public:
 
     juce::AudioProcessorValueTreeState parameters;
     bool loadReferenceJson(const juce::File& file, juce::String& message);
+    bool loadAnalysisTxt(const juce::File& file, juce::String& message);
+    float getBandFrequency(int index) const { return bandFrequencies[(size_t)index]; }
+    float getBandQ(int index) const { return bandQs[(size_t)index]; }
     juce::String getReferenceName() const { return referenceName; }
     static constexpr int bandCount = 10;
     static const std::array<float, bandCount> centresHz;
@@ -37,6 +40,8 @@ private:
     using Filter = juce::dsp::IIR::Filter<float>;
     std::array<std::array<Filter, 2>, bandCount> filters;
     std::array<float, bandCount> lastGainDb{};
+    std::array<float, bandCount> bandFrequencies = centresHz;
+    std::array<float, bandCount> bandQs{};
     double currentSampleRate = 44100.0;
     juce::String referenceName { "Manual / default" };
     void updateFilters();
