@@ -172,7 +172,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced(4);
     auto top = area.removeFromTop(19);
-    title.setBounds(top.removeFromLeft(area.getWidth() / 2));
+    title.setBounds(top.removeFromLeft(juce::jmax(100, area.getWidth() - 279)));
     resetButton.setBounds(top.removeFromRight(72).reduced(0, 0));
     loadButton.setBounds(top.removeFromRight(114).reduced(1, 0));
     fileStatus.setBounds(area.removeFromTop(13));
