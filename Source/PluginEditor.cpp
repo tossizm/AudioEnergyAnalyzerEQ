@@ -19,6 +19,8 @@ AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEd
     setSize(440, 296);
     setResizable(true, true);
     setResizeLimits(440, 296, 1800, 1200);
+    loadButton.setLookAndFeel(&responsiveLookAndFeel);
+    resetButton.setLookAndFeel(&responsiveLookAndFeel);
 
     loadButton.setColour(juce::TextButton::buttonColourId, juce::Colour::fromRGB(144, 238, 60));
     loadButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour::fromRGB(144, 238, 60));
