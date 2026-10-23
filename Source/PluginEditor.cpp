@@ -128,7 +128,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
         g.setFont(11.5f);
         g.setColour(juce::Colours::white);
         g.drawFittedText(bandNames[i], col, juce::Justification::centred, 1);
-        g.setFont(13.0f, juce::Font::bold);
+        g.setFont(juce::Font(13.0f, juce::Font::bold));
         g.setColour(juce::Colours::yellow);
         g.drawText(juce::String(db, 2) + " dB", col.getX(), col.getY() + 27, col.getWidth(), 20, juce::Justification::centred);
     }
@@ -144,7 +144,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::resized()
 void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
 {
     dragBand = -1;
-    const auto plot = getLocalBounds().reduced(16).withTrimmedTop(46);
+    auto plot = getLocalBounds().reduced(16).withTrimmedTop(46);
     const auto graph = plot.removeFromTop(plot.getHeight() - 112).toFloat().reduced(42.0f, 18.0f);
     const float minX = graph.getX(), maxX = graph.getRight();
     const float minY = graph.getY(), maxY = graph.getBottom();
