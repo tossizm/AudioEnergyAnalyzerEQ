@@ -164,7 +164,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDown(const juce::MouseEvent
 void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDrag(const juce::MouseEvent& event)
 {
     if (dragBand < 0) return;
-    const auto plot = getLocalBounds().reduced(16).withTrimmedTop(46);
+    auto plot = getLocalBounds().reduced(16).withTrimmedTop(46);
     const auto graph = plot.removeFromTop(plot.getHeight() - 112).toFloat().reduced(42.0f, 18.0f);
     const float db = juce::jlimit(minGain, maxGain, maxGain - (event.position.y - graph.getY()) / graph.getHeight() * (maxGain - minGain));
     if (auto* param = processor.parameters.getParameter("band" + juce::String(dragBand)))
