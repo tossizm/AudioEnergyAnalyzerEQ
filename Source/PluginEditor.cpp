@@ -15,9 +15,9 @@ const char* bandNames[] = { "20 ~ 60 Hz", "60 ~ 120 Hz", "120 ~ 250 Hz", "250 ~ 
 AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEditor(AudioEnergyAnalyzerEQAudioProcessor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
-    setSize(1170, 788);
+    setSize(585, 394);
     setResizable(true, true);
-    setResizeLimits(1170, 788, 2400, 1600);
+    setResizeLimits(585, 394, 2400, 1600);
 
     loadButton.setColour(juce::TextButton::buttonColourId, juce::Colour::fromRGB(144, 238, 60));
     loadButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour::fromRGB(144, 238, 60));
