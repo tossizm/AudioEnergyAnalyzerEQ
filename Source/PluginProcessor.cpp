@@ -2,6 +2,8 @@
 #include "PluginEditor.h"
 #include <array>
 #include <cmath>
+#include <regex>
+#include <string>
 
 const std::array<float, AudioEnergyAnalyzerEQAudioProcessor::bandCount> AudioEnergyAnalyzerEQAudioProcessor::centresHz
     = { 40.0f, 84.85f, 173.2f, 353.55f, 707.1f, 1414.2f, 3162.3f, 7071.1f, 12649.1f, 17888.5f };
@@ -12,6 +14,7 @@ AudioEnergyAnalyzerEQAudioProcessor::AudioEnergyAnalyzerEQAudioProcessor()
       parameters(*this, nullptr, "PARAMETERS", createParameterLayout())
 {
     lastGainDb.fill(999.0f);
+    bandQs.fill(1.0f);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout AudioEnergyAnalyzerEQAudioProcessor::createParameterLayout()
@@ -49,9 +52,9 @@ void AudioEnergyAnalyzerEQAudioProcessor::updateFilters()
         const float gain = raw != nullptr ? raw->load() : 0.0f;
         if (std::abs(gain - lastGainDb[(size_t)i]) < 0.005f) continue;
         lastGainDb[(size_t)i] = gain;
-        const auto frequency = (float) juce::jlimit(20.0, currentSampleRate * 0.45, (double)centresHz[(size_t)i]);
+        const auto frequency = (float) juce::jlimit(20.0, currentSampleRate * 0.45, (double)bandFrequencies[(size_t)i]);
         auto coeff = juce::dsp::IIR::Coefficients<float>::makePeakFilter(currentSampleRate,
-            frequency, 1.0f, juce::Decibels::decibelsToGain(gain));
+            frequency, bandQs[(size_t)i], juce::Decibels::decibelsToGain(gain));
         for (auto& filter : filters[(size_t)i]) filter.coefficients = coeff;
     }
 }
@@ -71,6 +74,55 @@ void AudioEnergyAnalyzerEQAudioProcessor::processBlock(juce::AudioBuffer<float>&
             juce::dsp::ProcessContextReplacing<float> context(oneChannel);
             filters[(size_t)band][(size_t)ch].process(context);
         }
+}
+
+
+bool AudioEnergyAnalyzerEQAudioProcessor::loadAnalysisTxt(const juce::File& file, juce::String& message)
+{
+    if (!file.existsAsFile())
+    {
+        message = "The selected TXT file does not exist.";
+        return false;
+    }
+
+    const auto text = file.loadFileAsString();
+    const std::string source = text.toStdString();
+    const std::regex bellPattern(
+        R"(Bell\\s*,\\s*([0-9]+(?:\\.[0-9]+)?)\\s*Hz\\s*,\\s*([-+]?[0-9]+(?:\\.[0-9]+)?)\\s*dB\\s*,\\s*Q\\s*([0-9]+(?:\\.[0-9]+)?))",
+        std::regex_constants::icase);
+    std::vector<std::array<float, 3>> parsedBands;
+    for (std::sregex_iterator it(source.begin(), source.end(), bellPattern), end; it != end; ++it)
+    {
+        const float frequency = std::stof((*it)[1].str());
+        const float gain = std::stof((*it)[2].str());
+        const float q = std::stof((*it)[3].str());
+        if (!std::isfinite(frequency) || !std::isfinite(gain) || !std::isfinite(q)
+            || frequency < 20.0f || frequency > 20000.0f || q < 0.1f || q > 18.0f)
+            continue;
+        parsedBands.push_back({ frequency, juce::jlimit(-12.0f, 12.0f, gain), q });
+        if (parsedBands.size() == (size_t)bandCount)
+            break;
+    }
+
+    if (parsedBands.size() != (size_t)bandCount)
+    {
+        message = "Could not load EQ: expected 10 Bell entries formatted as 'Bell, 123.4 Hz, -2.0 dB, Q 1.00'. Found "
+            + juce::String((int)parsedBands.size()) + " valid entries.";
+        return false;
+    }
+
+    for (int i = 0; i < bandCount; ++i)
+    {
+        bandFrequencies[(size_t)i] = parsedBands[(size_t)i][0];
+        bandQs[(size_t)i] = parsedBands[(size_t)i][2];
+        if (auto* parameter = parameters.getParameter("band" + juce::String(i)))
+            parameter->setValueNotifyingHost(parameter->convertTo0to1(parsedBands[(size_t)i][1]));
+    }
+    referenceName = file.getFileName();
+    lastGainDb.fill(999.0f);
+    updateFilters();
+    message = "Loaded 10 Bell EQ bands from " + file.getFileName() + ". Frequency, gain and Q are applied.";
+    return true;
 }
 
 bool AudioEnergyAnalyzerEQAudioProcessor::loadReferenceJson(const juce::File& file, juce::String& message)
