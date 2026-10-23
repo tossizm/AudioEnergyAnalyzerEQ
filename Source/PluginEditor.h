@@ -14,6 +14,14 @@ public:
 private:
     AudioEnergyAnalyzerEQAudioProcessor& processor;
     juce::Label title;
+    class ResponsiveTextButtonLookAndFeel final : public juce::LookAndFeel_V4
+    {
+    public:
+        juce::Font getTextButtonFont(juce::TextButton&, int buttonHeight) override
+        {
+            return juce::Font(juce::jmax(10.0f, buttonHeight * 0.42f));
+        }
+    } responsiveLookAndFeel;
     juce::TextButton loadButton { "Load Analysis TXT" };
     juce::TextButton resetButton { "Reset EQ" };
     juce::Label fileStatus;
