@@ -38,7 +38,13 @@ AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEd
             {
                 const auto file = fc.getResult();
                 if (file.existsAsFile())
-                    fileStatus.setText("Analysis TXT: " + file.getFileName(), juce::dontSendNotification);
+                {
+                    juce::String message;
+                    const bool loaded = processor.loadAnalysisTxt(file, message);
+                    fileStatus.setText(message, juce::dontSendNotification);
+                    fileStatus.setColour(juce::Label::textColourId, loaded ? juce::Colours::yellow : juce::Colours::red);
+                    repaint();
+                }
             });
     };
     resetButton.onClick = [this]
@@ -101,8 +107,9 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
         {
             const auto* raw = processor.parameters.getRawParameterValue("band" + juce::String(i));
             const double gain = raw != nullptr ? raw->load() : 0.0;
-            const double ratio = frequency / AudioEnergyAnalyzerEQAudioProcessor::centresHz[(size_t)i];
-            const double w = (ratio - 1.0 / ratio);
+            const double ratio = frequency / processor.getBandFrequency(i);
+            const double q = processor.getBandQ(i);
+            const double w = (ratio - 1.0 / ratio) * q;
             total += gain / (1.0 + w * w);
         }
         return (float)juce::jlimit(-18.0, 18.0, total);
@@ -123,7 +130,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
 
     for (int i = 0; i < AudioEnergyAnalyzerEQAudioProcessor::bandCount; ++i)
     {
-        const float hz = AudioEnergyAnalyzerEQAudioProcessor::centresHz[(size_t)i];
+        const float hz = processor.getBandFrequency(i);
         const auto* raw = processor.parameters.getRawParameterValue("band" + juce::String(i));
         const float db = raw != nullptr ? raw->load() : 0.0f;
         const float x = xForFrequency(hz);
@@ -143,10 +150,10 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
         const float db = raw != nullptr ? raw->load() : 0.0f;
         g.setFont(8.5f);
         g.setColour(juce::Colours::white);
-        g.drawFittedText(bandNames[i], col.withY(labelsArea.getY()).withHeight(20), juce::Justification::centred, 2);
+        g.drawFittedText(juce::String(processor.getBandFrequency(i), 1) + " Hz", col.withY(labelsArea.getY()).withHeight(20), juce::Justification::centred, 1);
         g.setFont(juce::Font(10.0f, juce::Font::bold));
         g.setColour(juce::Colours::yellow);
-        g.drawText(juce::String(db, 2) + " dB", col.getX(), labelsArea.getY() + 24, col.getWidth(), 16, juce::Justification::centred);
+        g.drawText(juce::String(db, 1) + " dB  Q " + juce::String(processor.getBandQ(i), 2), col.getX(), labelsArea.getY() + 24, col.getWidth(), 16, juce::Justification::centred);
     }
 }
 
