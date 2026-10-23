@@ -76,7 +76,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(2.25f), 4.5f, 0.75f);
 
     auto bounds = getLocalBounds().reduced(6);
-    bounds.removeFromTop(46);
+    bounds.removeFromTop(76);
     auto plot = bounds.removeFromTop(juce::jmax(67, bounds.getHeight() - 58)).reduced(0, 0);
     g.setColour(juce::Colour::fromRGB(13, 17, 29));
     g.fillRoundedRectangle(plot.toFloat(), 2.5f);
@@ -161,10 +161,10 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
                                  ? labelsArea.getRight() - (labelsArea.getX() + i * columnWidth) : columnWidth);
         const auto* raw = processor.parameters.getRawParameterValue("band" + juce::String(i));
         const float db = raw != nullptr ? raw->load() : 0.0f;
-        g.setFont(6.40875f * (getWidth() / defaultWidth));
+        g.setFont(8.5316f * (getWidth() / defaultWidth));
         g.setColour(juce::Colours::white);
         g.drawFittedText(juce::String(processor.getBandFrequency(i), 1) + " Hz", col.withY(labelsArea.getY()).withHeight(15), juce::Justification::centred, 1);
-        g.setFont(juce::Font(7.5375f * (getWidth() / defaultWidth), juce::Font::bold));
+        g.setFont(juce::Font(10.025f * (getWidth() / defaultWidth), juce::Font::bold));
         g.setColour(juce::Colours::yellow);
         g.drawText(juce::String(db, 1) + " dB", col.getX(), labelsArea.getY() + 18, col.getWidth(), 13, juce::Justification::centred);
         g.drawText("Q " + juce::String(processor.getBandQ(i), 2), col.getX(), labelsArea.getY() + 33, col.getWidth(), 13, juce::Justification::centred);
@@ -178,19 +178,19 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::resized()
     fileStatus.setFont(juce::Font(11.25f * textScale));
     auto area = getLocalBounds().reduced(9);
     const int topHeight = juce::roundToInt(43.5f * textScale);
-    const int resetWidth = juce::roundToInt(162.0f * textScale);
-    const int loadWidth = juce::roundToInt(256.5f * textScale);
+    const int resetWidth = juce::roundToInt(108.5f * textScale);
+    const int loadWidth = juce::roundToInt(171.9f * textScale);
     auto top = area.removeFromTop(topHeight);
     resetButton.setBounds(top.removeFromRight(resetWidth).reduced(0, 0));
     loadButton.setBounds(top.removeFromRight(loadWidth).reduced(1, 0));
-    title.setBounds(top);
+    title.setBounds(top.withY(top.getY() - juce::roundToInt(18.0f * textScale)));
     fileStatus.setBounds(area.removeFromTop(30 * textScale));
 }
 
 void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
 {
     dragBand = -1;
-    auto plot = getLocalBounds().reduced(6).withTrimmedTop(46);
+    auto plot = getLocalBounds().reduced(6).withTrimmedTop(76);
     plot = plot.withHeight(juce::jmax(67, plot.getHeight() - 58));
     const auto graph = plot.toFloat().reduced(22.5f, 9.0f);
     const float minX = graph.getX(), maxX = graph.getRight();
