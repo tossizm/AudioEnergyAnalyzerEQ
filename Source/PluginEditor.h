@@ -9,14 +9,12 @@ public:
     ~AudioEnergyAnalyzerEQAudioProcessorEditor() override = default;
     void paint(juce::Graphics&) override;
     void resized() override;
+    void mouseDown(const juce::MouseEvent&) override;
+    void mouseDrag(const juce::MouseEvent&) override;
 private:
     AudioEnergyAnalyzerEQAudioProcessor& processor;
-    juce::Label title, status;
-    juce::TextButton loadButton { "Load Reference JSON" }, resetButton { "Reset EQ" };
-    std::array<juce::Slider, AudioEnergyAnalyzerEQAudioProcessor::bandCount> sliders;
-    std::array<juce::Label, AudioEnergyAnalyzerEQAudioProcessor::bandCount> labels;
-    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, AudioEnergyAnalyzerEQAudioProcessor::bandCount> attachments;
-    juce::FileChooser chooser { "Select AudioEnergyAnalyzer reference JSON" };
-    void chooseJson();
+    juce::Label title;
+    juce::TextButton resetButton { "Reset EQ" };
+    int dragBand = -1;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioEnergyAnalyzerEQAudioProcessorEditor)
 };
