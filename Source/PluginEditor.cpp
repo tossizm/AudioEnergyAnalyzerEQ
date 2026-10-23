@@ -15,9 +15,18 @@ const char* bandNames[] = { "20 ~ 60 Hz", "60 ~ 120 Hz", "120 ~ 250 Hz", "250 ~ 
 AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEditor(AudioEnergyAnalyzerEQAudioProcessor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
-    setSize(780, 525);
+    setSize(1170, 788);
     setResizable(true, true);
-    setResizeLimits(780, 525, 2000, 1400);
+    setResizeLimits(1170, 788, 2400, 1600);
+
+    loadButton.setColour(juce::TextButton::buttonColourId, juce::Colour::fromRGB(144, 238, 60));
+    loadButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour::fromRGB(144, 238, 60));
+    loadButton.setColour(juce::TextButton::textColourOffId, juce::Colour::fromRGB(0, 0, 255));
+    loadButton.setColour(juce::TextButton::textColourOnId, juce::Colour::fromRGB(0, 0, 255));
+    resetButton.setColour(juce::TextButton::buttonColourId, juce::Colour::fromRGB(144, 238, 60));
+    resetButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour::fromRGB(144, 238, 60));
+    resetButton.setColour(juce::TextButton::textColourOffId, juce::Colour::fromRGB(0, 0, 255));
+    resetButton.setColour(juce::TextButton::textColourOnId, juce::Colour::fromRGB(0, 0, 255));
 
     title.setText("AudioEnergyAnalyzer EQ", juce::dontSendNotification);
     title.setFont(juce::Font(24.0f, juce::Font::bold));
@@ -26,7 +35,7 @@ AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEd
 
     addAndMakeVisible(loadButton);
     addAndMakeVisible(resetButton);
-    fileStatus.setText("Analysis TXT: (not loaded)", juce::dontSendNotification);
+    fileStatus.setText("", juce::dontSendNotification);
     fileStatus.setFont(juce::Font(15.0f));
     fileStatus.setColour(juce::Label::textColourId, juce::Colours::yellow);
     addAndMakeVisible(fileStatus);
@@ -41,7 +50,7 @@ AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEd
                 {
                     juce::String message;
                     const bool loaded = processor.loadAnalysisTxt(file, message);
-                    fileStatus.setText(message, juce::dontSendNotification);
+                    fileStatus.setText(loaded ? file.getFileName() : juce::String{}, juce::dontSendNotification);
                     fileStatus.setColour(juce::Label::textColourId, loaded ? juce::Colours::yellow : juce::Colours::red);
                     repaint();
                 }
@@ -126,7 +135,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
         if (i == 0) curve.startNewSubPath(x, y); else curve.lineTo(x, y);
     }
     g.setColour(juce::Colour::fromRGB(40, 205, 255));
-    g.strokePath(curve, juce::PathStrokeType(1.8f));
+    g.strokePath(curve, juce::PathStrokeType(3.6f));
 
     for (int i = 0; i < AudioEnergyAnalyzerEQAudioProcessor::bandCount; ++i)
     {
@@ -161,11 +170,11 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
 void AudioEnergyAnalyzerEQAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced(8);
-    auto top = area.removeFromTop(24);
+    auto top = area.removeFromTop(38);
     title.setBounds(top.removeFromLeft(area.getWidth() / 2));
-    resetButton.setBounds(top.removeFromRight(114).reduced(0, 1));
-    loadButton.setBounds(top.removeFromRight(183).reduced(2, 1));
-    fileStatus.setBounds(area.removeFromTop(18));
+    resetButton.setBounds(top.removeFromRight(143).reduced(0, 1));
+    loadButton.setBounds(top.removeFromRight(229).reduced(2, 1));
+    fileStatus.setBounds(area.removeFromTop(26));
 }
 
 void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
