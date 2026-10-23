@@ -178,7 +178,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDown(const juce::MouseEvent
     float bestDistance = 14.0f;
     for (int i = 0; i < AudioEnergyAnalyzerEQAudioProcessor::bandCount; ++i)
     {
-        const float hz = AudioEnergyAnalyzerEQAudioProcessor::centresHz[(size_t)i];
+        const float hz = processor.getBandFrequency(i);
         const float x = minX + std::log(hz / minFrequency) / std::log(maxFrequency / minFrequency) * graph.getWidth();
         const auto* raw = processor.parameters.getRawParameterValue("band" + juce::String(i));
         const float db = raw != nullptr ? raw->load() : 0.0f;
