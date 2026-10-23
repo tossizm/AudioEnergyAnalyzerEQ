@@ -7,7 +7,8 @@ constexpr float minFrequency = 20.0f;
 constexpr float maxFrequency = 20000.0f;
 constexpr float minGain = -18.0f;
 constexpr float maxGain = 18.0f;
-constexpr float defaultWidth = 440.0f;
+constexpr float defaultWidth = 660.0f;
+constexpr float defaultHeight = 444.0f;
 const char* bandNames[] = { "20 ~ 60 Hz", "60 ~ 120 Hz", "120 ~ 250 Hz", "250 ~ 500 Hz",
     "500 ~ 1000 Hz", "1000 ~ 2000 Hz", "2000 ~ 5000 Hz", "5000 ~ 10000 Hz",
     "10000 ~ 16000 Hz", "16000 ~ 20000 Hz" };
@@ -16,9 +17,9 @@ const char* bandNames[] = { "20 ~ 60 Hz", "60 ~ 120 Hz", "120 ~ 250 Hz", "250 ~ 
 AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEditor(AudioEnergyAnalyzerEQAudioProcessor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
-    setSize(440, 296);
+    setSize(660, 444);
     setResizable(true, true);
-    setResizeLimits(440, 296, 1800, 1200);
+    setResizeLimits(660, 444, 1800, 1200);
     loadButton.setLookAndFeel(&responsiveLookAndFeel);
     resetButton.setLookAndFeel(&responsiveLookAndFeel);
 
@@ -160,10 +161,10 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
                                  ? labelsArea.getRight() - (labelsArea.getX() + i * columnWidth) : columnWidth);
         const auto* raw = processor.parameters.getRawParameterValue("band" + juce::String(i));
         const float db = raw != nullptr ? raw->load() : 0.0f;
-        g.setFont(9.5625f * (getWidth() / defaultWidth));
+        g.setFont(6.40875f * (getWidth() / defaultWidth));
         g.setColour(juce::Colours::white);
         g.drawFittedText(juce::String(processor.getBandFrequency(i), 1) + " Hz", col.withY(labelsArea.getY()).withHeight(15), juce::Justification::centred, 1);
-        g.setFont(juce::Font(11.25f * (getWidth() / defaultWidth), juce::Font::bold));
+        g.setFont(juce::Font(7.5375f * (getWidth() / defaultWidth), juce::Font::bold));
         g.setColour(juce::Colours::yellow);
         g.drawText(juce::String(db, 1) + " dB", col.getX(), labelsArea.getY() + 18, col.getWidth(), 13, juce::Justification::centred);
         g.drawText("Q " + juce::String(processor.getBandQ(i), 2), col.getX(), labelsArea.getY() + 33, col.getWidth(), 13, juce::Justification::centred);
@@ -172,15 +173,18 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
 
 void AudioEnergyAnalyzerEQAudioProcessorEditor::resized()
 {
-    const float textScale = getWidth() / defaultWidth;
+    const float textScale = juce::jmin(getWidth() / defaultWidth, getHeight() / defaultHeight);
     title.setFont(juce::Font(18.0f * textScale, juce::Font::bold));
     fileStatus.setFont(juce::Font(11.25f * textScale));
-    auto area = getLocalBounds().reduced(6);
-    auto top = area.removeFromTop(29);
-    title.setBounds(top.removeFromLeft(juce::jmax(150, area.getWidth() - 418)));
-    resetButton.setBounds(top.removeFromRight(108).reduced(0, 0));
-    loadButton.setBounds(top.removeFromRight(171).reduced(1, 0));
-    fileStatus.setBounds(area.removeFromTop(20));
+    auto area = getLocalBounds().reduced(9);
+    const int topHeight = juce::roundToInt(43.5f * textScale);
+    const int resetWidth = juce::roundToInt(162.0f * textScale);
+    const int loadWidth = juce::roundToInt(256.5f * textScale);
+    auto top = area.removeFromTop(topHeight);
+    resetButton.setBounds(top.removeFromRight(resetWidth).reduced(0, 0));
+    loadButton.setBounds(top.removeFromRight(loadWidth).reduced(1, 0));
+    title.setBounds(top);
+    fileStatus.setBounds(area.removeFromTop(30 * textScale));
 }
 
 void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
