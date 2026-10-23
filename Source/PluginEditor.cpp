@@ -153,7 +153,8 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
         g.drawFittedText(juce::String(processor.getBandFrequency(i), 1) + " Hz", col.withY(labelsArea.getY()).withHeight(20), juce::Justification::centred, 1);
         g.setFont(juce::Font(15.0f, juce::Font::bold));
         g.setColour(juce::Colours::yellow);
-        g.drawText(juce::String(db, 1) + " dB", col.getX(), labelsArea.getY() + 24, col.getWidth(), 18, juce::Justification::centred);\n        g.drawText("Q " + juce::String(processor.getBandQ(i), 2), col.getX(), labelsArea.getY() + 44, col.getWidth(), 18, juce::Justification::centred);
+        g.drawText(juce::String(db, 1) + " dB", col.getX(), labelsArea.getY() + 24, col.getWidth(), 18, juce::Justification::centred);
+        g.drawText("Q " + juce::String(processor.getBandQ(i), 2), col.getX(), labelsArea.getY() + 44, col.getWidth(), 18, juce::Justification::centred);
     }
 }
 
