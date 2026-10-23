@@ -7,6 +7,7 @@ constexpr float minFrequency = 20.0f;
 constexpr float maxFrequency = 20000.0f;
 constexpr float minGain = -18.0f;
 constexpr float maxGain = 18.0f;
+constexpr float uiScale = 0.5f;
 const char* bandNames[] = { "20 ~ 60 Hz", "60 ~ 120 Hz", "120 ~ 250 Hz", "250 ~ 500 Hz",
     "500 ~ 1000 Hz", "1000 ~ 2000 Hz", "2000 ~ 5000 Hz", "5000 ~ 10000 Hz",
     "10000 ~ 16000 Hz", "16000 ~ 20000 Hz" };
@@ -15,9 +16,9 @@ const char* bandNames[] = { "20 ~ 60 Hz", "60 ~ 120 Hz", "120 ~ 250 Hz", "250 ~ 
 AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEditor(AudioEnergyAnalyzerEQAudioProcessor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
-    setSize(585, 394);
+    setSize(293, 197);
     setResizable(true, true);
-    setResizeLimits(585, 394, 2400, 1600);
+    setResizeLimits(293, 197, 1200, 800);
 
     loadButton.setColour(juce::TextButton::buttonColourId, juce::Colour::fromRGB(144, 238, 60));
     loadButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour::fromRGB(144, 238, 60));
@@ -29,14 +30,14 @@ AudioEnergyAnalyzerEQAudioProcessorEditor::AudioEnergyAnalyzerEQAudioProcessorEd
     resetButton.setColour(juce::TextButton::textColourOnId, juce::Colour::fromRGB(0, 0, 255));
 
     title.setText("AudioEnergyAnalyzer EQ", juce::dontSendNotification);
-    title.setFont(juce::Font(24.0f, juce::Font::bold));
+    title.setFont(juce::Font(12.0f, juce::Font::bold));
     title.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(title);
 
     addAndMakeVisible(loadButton);
     addAndMakeVisible(resetButton);
     fileStatus.setText("", juce::dontSendNotification);
-    fileStatus.setFont(juce::Font(15.0f));
+    fileStatus.setFont(juce::Font(7.5f));
     fileStatus.setColour(juce::Label::textColourId, juce::Colours::yellow);
     addAndMakeVisible(fileStatus);
 
@@ -69,15 +70,15 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colour::fromRGB(1, 0, 102));
     g.setColour(juce::Colours::white.withAlpha(0.25f));
-    g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(3.0f), 6.0f, 1.0f);
+    g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(1.5f), 3.0f, 0.5f);
 
-    auto bounds = getLocalBounds().reduced(8);
-    bounds.removeFromTop(62);
-    auto plot = bounds.removeFromTop(juce::jmax(90, bounds.getHeight() - 78)).reduced(0, 1);
+    auto bounds = getLocalBounds().reduced(4);
+    bounds.removeFromTop(31);
+    auto plot = bounds.removeFromTop(juce::jmax(45, bounds.getHeight() - 39)).reduced(0, 0);
     g.setColour(juce::Colour::fromRGB(13, 17, 29));
-    g.fillRoundedRectangle(plot.toFloat(), 5.0f);
+    g.fillRoundedRectangle(plot.toFloat(), 2.5f);
 
-    const auto graph = plot.toFloat().reduced(30.0f, 12.0f);
+    const auto graph = plot.toFloat().reduced(15.0f, 6.0f);
     auto xForFrequency = [&graph](float hz)
     {
         const float t = std::log(hz / minFrequency) / std::log(maxFrequency / minFrequency);
@@ -88,14 +89,14 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
         return graph.getBottom() - (db - minGain) / (maxGain - minGain) * graph.getHeight();
     };
 
-    g.setFont(13.5f);
+    g.setFont(6.75f);
     for (int db = -18; db <= 18; db += 6)
     {
         const float y = yForGain((float)db);
         g.setColour(db == 0 ? juce::Colours::white.withAlpha(0.35f) : juce::Colours::white.withAlpha(0.12f));
         g.drawHorizontalLine((int)y, graph.getX(), graph.getRight());
         g.setColour(juce::Colours::white.withAlpha(0.85f));
-        g.drawText(juce::String(db), (int)plot.getX(), (int)y - 9, 38, 18, juce::Justification::centredRight);
+        g.drawText(juce::String(db), (int)plot.getX(), (int)y - 4, 19, 9, juce::Justification::centredRight);
     }
 
     const float ticks[] = {20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000};
@@ -106,7 +107,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
         g.drawVerticalLine((int)x, graph.getY(), graph.getBottom());
         juce::String label = hz >= 1000.0f ? juce::String(hz / 1000.0f, hz >= 10000.0f ? 0 : 1) + "k" : juce::String((int)hz);
         g.setColour(juce::Colours::white.withAlpha(0.9f));
-        g.drawText(label, (int)x - 18, (int)graph.getBottom() + 1, 54, 17, juce::Justification::centred);
+        g.drawText(label, (int)x - 9, (int)graph.getBottom(), 27, 8, juce::Justification::centred);
     }
 
     auto responseAt = [this](float frequency)
@@ -135,7 +136,7 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
         if (i == 0) curve.startNewSubPath(x, y); else curve.lineTo(x, y);
     }
     g.setColour(juce::Colour::fromRGB(40, 205, 255));
-    g.strokePath(curve, juce::PathStrokeType(3.6f));
+    g.strokePath(curve, juce::PathStrokeType(1.8f));
 
     for (int i = 0; i < AudioEnergyAnalyzerEQAudioProcessor::bandCount; ++i)
     {
@@ -145,11 +146,11 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
         const float x = xForFrequency(hz);
         const float y = yForGain(db);
         g.setColour(juce::Colour::fromRGB(255, 184, 54));
-        g.fillEllipse(x - 7.0f, y - 7.0f, 14.0f, 14.0f);
+        g.fillEllipse(x - 3.5f, y - 3.5f, 7.0f, 7.0f);
     }
 
     const int columnWidth = bounds.getWidth() / AudioEnergyAnalyzerEQAudioProcessor::bandCount;
-    auto labelsArea = bounds.withY(plot.getBottom() + 4).withHeight(52);
+    auto labelsArea = bounds.withY(plot.getBottom() + 2).withHeight(26);
     for (int i = 0; i < AudioEnergyAnalyzerEQAudioProcessor::bandCount; ++i)
     {
         auto col = labelsArea.withX(labelsArea.getX() + i * columnWidth)
@@ -157,35 +158,35 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::paint(juce::Graphics& g)
                                  ? labelsArea.getRight() - (labelsArea.getX() + i * columnWidth) : columnWidth);
         const auto* raw = processor.parameters.getRawParameterValue("band" + juce::String(i));
         const float db = raw != nullptr ? raw->load() : 0.0f;
-        g.setFont(12.75f);
+        g.setFont(6.375f);
         g.setColour(juce::Colours::white);
-        g.drawFittedText(juce::String(processor.getBandFrequency(i), 1) + " Hz", col.withY(labelsArea.getY()).withHeight(20), juce::Justification::centred, 1);
-        g.setFont(juce::Font(15.0f, juce::Font::bold));
+        g.drawFittedText(juce::String(processor.getBandFrequency(i), 1) + " Hz", col.withY(labelsArea.getY()).withHeight(10), juce::Justification::centred, 1);
+        g.setFont(juce::Font(7.5f, juce::Font::bold));
         g.setColour(juce::Colours::yellow);
-        g.drawText(juce::String(db, 1) + " dB", col.getX(), labelsArea.getY() + 24, col.getWidth(), 18, juce::Justification::centred);
-        g.drawText("Q " + juce::String(processor.getBandQ(i), 2), col.getX(), labelsArea.getY() + 44, col.getWidth(), 18, juce::Justification::centred);
+        g.drawText(juce::String(db, 1) + " dB", col.getX(), labelsArea.getY() + 12, col.getWidth(), 9, juce::Justification::centred);
+        g.drawText("Q " + juce::String(processor.getBandQ(i), 2), col.getX(), labelsArea.getY() + 22, col.getWidth(), 9, juce::Justification::centred);
     }
 }
 
 void AudioEnergyAnalyzerEQAudioProcessorEditor::resized()
 {
-    auto area = getLocalBounds().reduced(8);
-    auto top = area.removeFromTop(38);
+    auto area = getLocalBounds().reduced(4);
+    auto top = area.removeFromTop(19);
     title.setBounds(top.removeFromLeft(area.getWidth() / 2));
-    resetButton.setBounds(top.removeFromRight(143).reduced(0, 1));
-    loadButton.setBounds(top.removeFromRight(229).reduced(2, 1));
-    fileStatus.setBounds(area.removeFromTop(26));
+    resetButton.setBounds(top.removeFromRight(72).reduced(0, 0));
+    loadButton.setBounds(top.removeFromRight(114).reduced(1, 0));
+    fileStatus.setBounds(area.removeFromTop(13));
 }
 
 void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDown(const juce::MouseEvent& event)
 {
     dragBand = -1;
-    auto plot = getLocalBounds().reduced(8).withTrimmedTop(62);
-    plot = plot.withHeight(juce::jmax(90, plot.getHeight() - 78));
-    const auto graph = plot.toFloat().reduced(30.0f, 12.0f);
+    auto plot = getLocalBounds().reduced(4).withTrimmedTop(31);
+    plot = plot.withHeight(juce::jmax(45, plot.getHeight() - 39));
+    const auto graph = plot.toFloat().reduced(15.0f, 6.0f);
     const float minX = graph.getX(), maxX = graph.getRight();
     const float maxY = graph.getBottom();
-    float bestDistance = 14.0f;
+    float bestDistance = 7.0f;
     for (int i = 0; i < AudioEnergyAnalyzerEQAudioProcessor::bandCount; ++i)
     {
         const float hz = processor.getBandFrequency(i);
@@ -201,9 +202,9 @@ void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDown(const juce::MouseEvent
 void AudioEnergyAnalyzerEQAudioProcessorEditor::mouseDrag(const juce::MouseEvent& event)
 {
     if (dragBand < 0) return;
-    auto plot = getLocalBounds().reduced(8).withTrimmedTop(62);
-    plot = plot.withHeight(juce::jmax(90, plot.getHeight() - 78));
-    const auto graph = plot.toFloat().reduced(30.0f, 12.0f);
+    auto plot = getLocalBounds().reduced(4).withTrimmedTop(31);
+    plot = plot.withHeight(juce::jmax(45, plot.getHeight() - 39));
+    const auto graph = plot.toFloat().reduced(15.0f, 6.0f);
     const float db = juce::jlimit(minGain, maxGain, maxGain - (event.position.y - graph.getY()) / graph.getHeight() * (maxGain - minGain));
     if (auto* param = processor.parameters.getParameter("band" + juce::String(dragBand)))
         param->setValueNotifyingHost(param->convertTo0to1(db));
