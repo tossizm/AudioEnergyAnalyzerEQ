@@ -63,15 +63,19 @@ jobs:
             throw "Packaged VST3 binary missing: $expected"
           }
 
-          $zip = "AudioEnergyAnalyzerEQ-Windows-VST3.zip"
-          if (Test-Path $zip) { Remove-Item $zip -Force }
-          Compress-Archive -Path "dist\*" -DestinationPath $zip -Force
-          if (!(Test-Path $zip -PathType Leaf)) { throw "Artifact ZIP was not created" }
+          # The uploaded artifact ZIP must contain the install folders/files directly.
+          # Never place a ZIP inside dist, because upload-artifact itself creates the downloadable ZIP.
+          $nestedZips = Get-ChildItem -Path "dist" -Recurse -File -Filter "*.zip"
+          if ($nestedZips) { throw "Nested ZIP is forbidden in dist: $($nestedZips.FullName -join ', ')" }
+
+          Write-Host "Artifact root contents:"
+          Get-ChildItem -Path "dist" -Force | Select-Object Name, Mode | Format-Table -AutoSize
           Write-Host "Packaged install path: Tossizm\AudioEnergyAnalyzerEQ.vst3\Contents\x86_64-win\AudioEnergyAnalyzerEQ.vst3"
 
-      - name: Upload Windows VST3 artifact
+      - name: Upload Windows VST3 artifact (folders/files directly; no nested ZIP)
         uses: actions/upload-artifact@v4
         with:
           name: AudioEnergyAnalyzerEQ-Windows-VST3
-          path: AudioEnergyAnalyzerEQ-Windows-VST3.zip
+          path: dist/**
           if-no-files-found: error
+          include-hidden-files: true
